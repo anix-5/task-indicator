@@ -3,10 +3,8 @@
 
 from __future__ import print_function
 
-import logging
 import os
 import shlex
-import sys
 import time
 
 
@@ -44,8 +42,11 @@ class Task(dict):
 
         value += min((time.time() - int(self["entry"])) / 1000, 10)
 
-        pri = {"L": 0, "M": 10, "H": 20}
-        value += pri.get(self["priority"])
+        pri = {"L": 10, "M": 20, "H": 30}
+        if "priority" in self:
+            value += pri.get(self["priority"])
+        else:
+            value = 0.0
 
         return value
 
@@ -124,21 +125,21 @@ class Tasks(object):
             raw_data = f.read()
 
         tasks = []
-        for line in raw_data.rstrip().split("\n"):
-            if not line.startswith("[") or not line.endswith("]"):
-                raise ValueError("Unsupported file format " \
-                    "in {0}".format(filename))
+        if raw_data:
+            for line in raw_data.rstrip().split("\n"):
+                if not line.startswith("[") or not line.endswith("]"):
+                    raise ValueError("Unsupported file format "
+                                     "in {0}".format(database))
+                task = Task(database)
+                for kw in shlex.split(line[1:-1]):
+                    k, v = kw.split(":", 1)
+                    v = v.replace("\/", "/")  # FIXME: must be a better way
+                    v = v.decode("utf-8")
+                    if k == "tags":
+                        v = v.split(",")
+                    task[k] = v
 
-            task = Task(database)
-            for kw in shlex.split(line[1:-1]):
-                k, v = kw.split(":", 1)
-                v = v.replace("\/", "/")  # FIXME: must be a better way
-                v = v.decode("utf-8")
-                if k == "tags":
-                    v = v.split(",")
-                task[k] = v
-
-            tasks.append(task)
+                tasks.append(task)
 
         return tasks
 
