@@ -10,13 +10,8 @@ __email__ = "hex@umonkey.net"
 
 
 import appindicator
-import datetime
-import dateutil.parser
-import json
 import os
 import sys
-import time
-
 import pygtk
 pygtk.require("2.0")
 import gtk
@@ -52,14 +47,15 @@ class Checker(object):
         self.task_items = []
         self.database = database.Database(callback=self.on_tasks_changed)
 
-        self.indicator = appindicator.Indicator(self.appname,
-            self.icon, appindicator.CATEGORY_APPLICATION_STATUS)
+        self.indicator = appindicator.Indicator(self.appname, self.icon,
+                         appindicator.CATEGORY_APPLICATION_STATUS)
 
         icondir = os.getenv("TASK_INDICATOR_ICONDIR")
         if icondir:
             self.indicator.set_icon_theme_path(icondir)
-            print("Appindicator theme path: %s, wanted: %s" % (self.indicator.get_icon_theme_path(), icondir))
-
+            print("Appindicator theme path: "
+                  " %s, wanted: %s" % (self.indicator.get_icon_theme_path(),
+                                       icondir))
 
         self.indicator.set_status(appindicator.STATUS_ACTIVE)
         self.indicator.set_attention_icon(self.icon_attn)
@@ -105,7 +101,7 @@ class Checker(object):
         self.stop_item = add_item("Stop all running tasks", self.stop)
         if get_program_path("bugwarrior-pull"):
             self.bw_item = add_item("Pull tasks from outside",
-                self.on_pull_tasks)
+                                    self.on_pull_tasks)
         self.quit_item = add_item("Quit", self.quit)
 
     def menu_add_tasks(self):
@@ -117,10 +113,11 @@ class Checker(object):
         self.task_items = []
 
         data = [t for t in self.database.get_tasks()
-            if t["status"] == "pending"]
+                if t["status"] == "pending"]
 
         for task in sorted(data, key=self.task_sort)[:10]:
-            item = gtk.CheckMenuItem(self.format_menu_label(task), use_underline=False)
+            item = gtk.CheckMenuItem(self.format_menu_label(task),
+                                     use_underline=False)
             if task.get("start"):
                 item.set_active(True)
             item.connect("activate", self.on_task_toggle)
@@ -139,7 +136,10 @@ class Checker(object):
             self.task_items.append(item)
 
     def format_menu_label(self, task):
-        proj = task["project"].split(".")[-1]
+        if "project" in task:
+            proj = task["project"].split(".")[-1]
+        else:
+            proj = "None"
         title = u"%s:\t%s" % (proj, util.strip_description(task["description"]))
         return title
 
@@ -148,13 +148,13 @@ class Checker(object):
         is_pinned = "pin" in task.get("tags", [])
         is_running = "start" in task
         is_endless = "endless" in task.get("tags", [])
-        pri = {"H":3, "M": 2, "L": 1}.get(task.get("priority"), 0)
+        pri = {"H": 3, "M": 2, "L": 1}.get(task.get("priority"), 0)
         return (-is_running, -is_pinned, is_endless, -pri,
-            -float(task.get("urgency", 0)))
+                -float(task.get("urgency", 0)))
 
     def on_add_task(self, widget):
         self.dialog.show_task({"uuid": None, "status": "pending",
-            "description": "", "priority": "M"})
+                               "description": "", "priority": "M"})
 
     def on_pull_tasks(self, widget):
         util.run_command(["bugwarrior-pull"])
@@ -236,7 +236,7 @@ class Checker(object):
         """Changes the indicator icon and text label according to running
         tasks."""
         tasks = [t for t in self.database.get_tasks()
-            if t["status"] == "pending" and "start" in t]
+                 if t["status"] == "pending" and "start" in t]
 
         if not tasks:
             self.indicator.set_label("Idle")
@@ -247,7 +247,7 @@ class Checker(object):
             self.stop_item.show()
 
             msg = "%u/%s" % (len(tasks),
-                self.format_duration(self.get_duration()))
+                             self.format_duration(self.get_duration()))
 
             self.indicator.set_label(msg)
 
